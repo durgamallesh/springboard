@@ -1,0 +1,105 @@
+---
+title: "UD651-Lesson3"
+output: pdf_document
+---
+
+This document includes all the assignments done as part of the UD651 Lesson 3 course on Udacity.
+
+Dataset used is a Pseudo facebook data downloaded from the course site and saved in the current working directory. 
+https://s3.amazonaws.com/udacity-hosted-downloads/ud651/lesson3_student.rmd
+
+Loading required libraries:
+
+```{r}
+require(ggplot2)
+require(gridExtra)
+
+```
+
+```{r}
+fb <- read.csv("pseudo_facebook.tsv", sep="\t")
+```
+
+Creating a histogram for the friend count separated by Gender:
+
+```{r}
+qplot(x = friend_count, data = na.omit(fb), binwidth = 25) + 
+  scale_x_continuous(limits = c(0, 1000), breaks = seq(0, 1000, 50)) +
+  facet_wrap(~gender)
+```
+
+Generating the summary data:
+
+```{r}
+table(fb$gender)
+
+by(fb$friend_count, fb$gender, summary)
+```
+
+
+Analyze the tenure and its spread in the dataset. Converting the data into years since its in days:
+
+```{r}
+
+qplot(x = tenure/365, data = na.omit(fb), binwidth = 1)
+```
+
+Explore several scaling functions in ggplot and comparing them to the original plot.
+
+```{r}
+p1 <- qplot(x = friend_count, data = na.omit(fb), binwidth = 5) + 
+  scale_x_continuous(limits = c(0, 150), breaks = seq(0, 150, 5))
+
+p2 <- qplot(x = log10(friend_count+1), data = na.omit(fb), binwidth = 1) 
+
+p3 <- qplot(x = friend_count, data = na.omit(fb), binwidth = 1) 
+
+```
+
+Arrange the above graphs in a grid:
+
+```{r}
+
+grid.arrange(p1, p2, p3, ncol=1)
+```
+
+Plotting a frequency polygon using the geom options on different scales
+
+```{r}
+qplot(x = www_likes, data = na.omit(fb), geom="freqpoly", color=gender) +
+  scale_x_continuous(limits = c(0, 150), breaks = seq(0, 150, 5)) 
+
+qplot(x = www_likes, data = na.omit(fb), geom="freqpoly", color=gender) +
+  scale_x_log10()
+```
+
+Using the ylim operator to limit the Y limits
+
+```{r}
+
+qplot(x=gender, y = friend_count, data = subset(fb, !is.na(gender)), geom="boxplot",
+      ylim = c(0,1000))
+```
+
+Using coord cartesian to limit the y values on friendships_initiated:
+
+```{r}
+
+qplot(x=gender, y = friendships_initiated, data = subset(fb, !is.na(gender)), geom="boxplot") +
+      coord_cartesian(ylim = c(0,130))
+```
+
+Calculate the mobile_check_in s:
+
+```{r}
+fb$mobile_check_in <- NA
+
+fb$mobile_check_in <- ifelse(fb$mobile_likes >0,1,0)
+
+summary(fb$mobile_check_in)
+
+
+sum(fb$mobile_check_in == 1)/
+length(fb$userid)
+
+```
