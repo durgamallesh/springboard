@@ -1,0 +1,187 @@
+---
+title: "EDAProblemSet3"
+output: pdf_document
+---
+Load the required libraries
+
+```{r}
+
+require(gridExtra)
+require(dplyr)
+require(tidyr)
+require(ggplot2)
+```
+
+Looking at the structure of the diamonds dataset
+
+```{r}
+
+
+require(datasets)
+str(diamonds)
+
+#unique(diamonds$color)
+```
+
+Plot the histogram for Price
+
+```{r}
+qplot(diamonds$price, 
+      geom="histogram", 
+     # binwidth=0.1, 
+      main="Histogram for Price", 
+      xlab="Price",
+      fill=I("blue"), 
+      col=I("red"), 
+      alpha=I(.2),
+    breaks=seq(500, 750,by=20),
+      xlim = c(500,750))
+```
+
+Plot a graph for each type of cut and then arrange them in a grid.
+
+```{r}
+p1 <- qplot(diamonds[diamonds$cut == 'Fair',]$price, 
+            geom="histogram", 
+            # binwidth=0.1, 
+            main="Histogram for Price", 
+            xlab="Price",
+            fill=I("blue"), 
+            col=I("black"), 
+            alpha=I(.2))
+
+p2 <- qplot(diamonds[diamonds$cut == 'Good',]$price, 
+            geom="histogram", 
+            # binwidth=0.1, 
+            main="Histogram for Price", 
+            xlab="Price",
+            fill=I("blue"), 
+            col=I("black"), 
+            alpha=I(.2))
+
+p3 <- qplot(diamonds[diamonds$cut == 'Very Good',]$price, 
+            geom="histogram", 
+            # binwidth=0.1, 
+            main="Histogram for Price", 
+            xlab="Price",
+            fill=I("blue"), 
+            col=I("black"), 
+            alpha=I(.2))
+
+p4 <- qplot(diamonds[diamonds$cut == 'Premium',]$price, 
+            geom="histogram", 
+            # binwidth=0.1, 
+            main="Histogram for Price", 
+            xlab="Price",
+            fill=I("blue"), 
+            col=I("black"), 
+            alpha=I(.2))
+
+p5 <- qplot(diamonds[diamonds$cut == 'Ideal',]$price, 
+            geom="histogram", 
+            # binwidth=0.1, 
+            main="Histogram for Price", 
+            xlab="Price",
+            fill=I("blue"), 
+            col=I("black"), 
+            alpha=I(.2))
+
+grid.arrange(p1, p2, p3,p4,p5,ncol=2)
+
+```
+
+Implement the same graph, using facet_wrap functionality in ggplot and not have a fixed y-axis scale.
+
+```{r}
+qplot(x = price, data = diamonds) + facet_wrap(~cut, scales="free_y")
+```
+
+Plot a graph (boxplot) for the price/carat for each type of cut and save the graphs to a local directory.
+
+```{r}
+ggplot(diamonds, aes(cut,price/carat)) + geom_boxplot()
+ggsave("box_by_cut.png")
+ggplot(diamonds, aes(clarity,price/carat)) + geom_boxplot()
+ggsave("box_by_clarity.png")
+ggplot(diamonds, aes(color,price/carat)) + geom_boxplot()
+ggsave("box_by_color.png")
+
+```
+
+Looking at the summary of Price for best and worst colors.
+
+```{r}
+
+summary(subset(diamonds, color=="D")$price)
+
+summary(subset(diamonds, color=="J")$price)
+
+IQR(subset(diamonds, color=="D")$price)
+
+IQR(subset(diamonds, color=="J")$price)
+```
+
+Draw a frequency polygib to check the frequency of different weights of the diamonds.
+
+```{r}
+qplot(carat, data = diamonds, geom = "freqpoly", bins=100, xlim=c(2.0,5.0))
+
+qplot(carat, data = diamonds, geom = "freqpoly", bins=100, xlim=c(2.0,3.0))
+
+qplot(carat, data = diamonds, geom = "freqpoly", bins=100, xlim=c(1.8,2.0))
+
+qplot(carat, data = diamonds, geom = "freqpoly", bins=100, xlim=c(1.5,1.6))
+
+qplot(carat, data = diamonds, geom = "freqpoly", bins=100, xlim=c(1.0,1.1))
+
+qplot(carat, data = diamonds, geom = "freqpoly", bins=100, xlim=c(0.5,0.8))
+
+qplot(carat, data = diamonds, geom = "freqpoly", bins=100, xlim=c(0.1,0.5))
+
+```
+
+
+Below code is to answer the last set of questions in Problem Set 3.
+
+Save the Unemployment data set for 15+ year olds for several countries for last 25+ years. The data is avaiable in Excel which was converted into CSV for the ease of reading into R.
+
+```{r}
+
+unm <- read.csv("unemployment_15.csv")
+
+head(unm)
+
+names(unm) <- c("country",1981:2005,"dummy")
+```
+
+reshape the data, convert the data from columns to rows. Filter the NAs after the conversion.
+
+```{r}
+unmg <- gather(unm, 'year',"unm",2:27)
+
+unmg <- filter(unmg, !is.na(unm))
+
+
+
+```
+
+Plot the histrigrams for unemployment rates
+
+```{r}
+qplot(unmg$unm, geom="histogram", xlab = "unemployment", bins=100)
+
+qplot(x=unm, data=unmg) + facet_wrap(~country, scales="free_y")
+
+ggplot() + geom_line(data=unmg, aes(x=year,y=unm,group=country, color=country))
+```
+
+Check the plots for few countries
+
+```{r}
+
+ggplot() + geom_line(data=filter(unmg, country=="Spain"), aes(x=year,y=unm,group=country, color=country))
+
+
+ggplot() + geom_line(data=filter(unmg, country=="Portugal"), aes(x=year,y=unm,group=country, color=country))
+
+```
