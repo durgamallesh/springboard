@@ -1,0 +1,79 @@
+---
+title: "Birthdays Analysis"
+output: pdf_document
+---
+
+This file details the steps taken to analyze the Birthdays. The file used is a sample file from Udacity 651 course. 
+https://s3.amazonaws.com/udacity-hosted-downloads/ud651/birthdaysExample.csv
+
+
+
+```{r}
+bd <- read.csv("birthdaysExample.csv")
+```
+
+A peek into the dataframe:
+
+```{r}
+head(bd)
+```
+
+We observe that this dataset has only one column called dates. Now converting this column into POSIX date. Using Lubridate package.
+
+```{r}
+
+require(lubridate)
+
+dates <- as.data.frame(parse_date_time(bd$dates,"m!*/d!/y!*"))
+
+names(dates) <- c("date")
+
+```
+
+Extract the month and days from the date and add it to the dataframe.
+
+```{r}
+
+require(dplyr)
+dates <- dates %>% mutate(month = month(date), day = day(date))
+
+head(dates)
+```
+
+Analyzing the distribution of birthdays across different months:
+
+```{r}
+require(ggplot2)
+qplot(x=month, data=dates, geom="histogram", bins=100)
+
+```
+
+As we can see from the graph, the birthdays are pretty evenly distributed.
+
+Lets Look at the histogram for days:
+
+```{r}
+qplot(x=day, data=dates, geom="histogram", bins=100)
+```
+
+Observing the hostogram for days, looks like there are few dips and a peak. Peak on 14th and dip on 31st and 11th. Dip on 31st is expected as it doesn't appear in all the months.
+
+create an aggregated dataset for total number of birthdays for each day of the month using dplyr
+
+```{r}
+
+dates_aggr <- dates %>% group_by(month, day) %>% summarize(a=n())
+
+
+ggplot(dates_aggr, aes(day,a)) + geom_boxplot() + facet_wrap(~month)
+```
+
+let us see which month has a highest number of birthdays on a particular day:
+
+```{r}
+dates_aggr %>% ggplot() + geom_line(aes(x=day, y=a)) + facet_wrap(~month)
+```
+
+The graphs indicate that few months have days that have as many as 8 birthdays on the same day. February, May and July.
+
+
