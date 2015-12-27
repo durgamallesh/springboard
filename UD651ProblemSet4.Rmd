@@ -1,0 +1,238 @@
+---
+title: "UD651ProblemSet4"
+output: pdf_document
+---
+
+Load the diamonds dataset.
+
+```{r}
+require(ggplot2)
+require(dplyr)
+data(diamonds)
+
+dm <- diamonds
+```
+
+scatter plot between Price and x
+
+```{r}
+
+ggplot(aes(x=price, y=x), data=dm) + geom_point()
+```
+
+The scatter plot indicates that there is an exponential relation betweeb Price and x. There are few outliers which we can probably eliminate by limiting the X values. 
+
+Calculate the correlation between Price and (x,y,z) dimensions.
+
+```{r}
+cor.test(dm$price, dm$x)
+
+cor.test(dm$price, dm$y)
+
+cor.test(dm$price, dm$z)
+```
+
+From the above results we can conclude that the correlations are as follows:
+
+Price and X: 0.88
+Price and Y: 0.86
+Price and Z: 0.86
+
+Scatter Plot between Price and Depth:
+
+```{r}
+ggplot(aes(x=depth, y=price), data=dm) + geom_point()
+```
+
+change the transparency of the points to 1/100 and plot x-axis for every two points. To plot X-axis, we need to find the range of the depth. 
+
+```{r}
+
+range(dm$depth)
+
+```
+
+From the above output, we know that the range is 43 and 79. Setting the breaks now:
+
+```{r}
+ggplot(data = diamonds, aes(x = depth, y = price)) + 
+    geom_point(alpha=1/100) +
+    scale_x_continuous(breaks=seq(43, 79, 2))
+```
+
+Looking at the plot, we can see that most of the diamonds lie between the depths 59 and 64. 
+
+Calculating the correlation between Depth and Price:
+
+```{r}
+cor.test(dm$depth, dm$price)
+
+```
+
+The correlation of -0.10 indicates that the depth and price doesn't have a strong relation. 
+
+Lets draw a scatter plot between price and carat.
+
+```{r}
+ggplot(aes(x=carat, y=price), data=dm) + geom_point() +
+  xlim(0, quantile(dm$carat, 0.99)) +
+  ylim(0, quantile(dm$price, 0.99))
+
+```
+
+Add volume to the diamonds dataset, calculated as volume = x * y * z
+
+```{r}
+dm <- dm %>% 
+  mutate(volume = x * y * z)
+
+```
+
+Now creating the scatter plot between price and volume:
+
+```{r}
+ggplot(aes(x=volume, y=price), data=dm) + geom_point()
+
+```
+
+Calculating the correlation between price and volume by eliminating any volumes that are either equal to 0 or greater than 800.
+
+```{r}
+cor.test(dm[dm$volume > 0 & dm$volume<800,]$volume, dm[dm$volume > 0 & dm$volume<800,]$price)
+
+```
+
+The correlation is very high at 0.92.
+
+now lets draw a scater plot between volume and Price, but eliminating the outliers:
+
+```{r}
+ggplot(aes(x=volume, y=price), data=dm[dm$volume > 0 & dm$volume < 800,]) +
+  geom_point(alpha=1/100) +
+  geom_smooth(method = "lm")
+```
+  
+Creating a new dataframe called diamondsByClarity with the median, mean and other price calculations by Clarity.
+
+```{r}
+diamondsByClarity <- dm %>%
+  group_by(clarity) %>%
+  summarize(mean_price = mean(price), median_price=median(price), 
+            min_price = min(price), max_price = max(price), n = n()) %>%
+  arrange(clarity)
+
+```
+
+Create two more dataframes with different groupings, clarity and Color:
+
+```{r}
+
+diamonds_by_clarity <- group_by(diamonds, clarity)
+diamonds_mp_by_clarity <- summarise(diamonds_by_clarity, mean_price = mean(price))
+
+diamonds_by_color <- group_by(diamonds, color)
+diamonds_mp_by_color <- summarise(diamonds_by_color, mean_price = mean(price))
+```
+
+Plot bar graphs from the above two datasets and arrange them in same grid:
+
+```{r}
+p1 <- ggplot(data=diamonds_mp_by_color, aes(x=color, y=mean_price)) + geom_bar(stat="identity")
+
+p2 <- ggplot(data=diamonds_mp_by_clarity, aes(x=clarity, y=mean_price)) + geom_bar(stat="identity")
+
+require(gridExtra)
+
+grid.arrange(p1, p2, ncol=1)
+
+```
+
+From the graph it appears that the Mean price is directly proportional to Color, where as Clarity is inversely proportional with and exception.
+
+
+______________________________________________________________________
+
+Below is the final exercise where a dataset from Gapminder is downloaded.
+
+Save the Unemployment data set for 15+ year olds for several countries for last 25+ years. The data is avaiable in Excel which was converted into CSV for the ease of reading into R.
+
+```{r}
+require(tidyr)
+
+unm <- read.csv("unemployment_15.csv")
+
+head(unm)
+
+names(unm) <- c("country",1981:2005,"dummy")
+```
+
+reshape the data, convert the data from columns to rows. Filter the NAs after the conversion.
+
+```{r}
+unmg <- gather(unm, 'year',"unm",2:27)
+
+unmg <- filter(unmg, !is.na(unm))
+
+```
+
+Let us create two dataframes, one at country level and another at the year level, so as to understand the relation between unemployment rate and these variables.
+
+```{r}
+
+unmg_country <- unmg %>%
+  group_by(country) %>%
+  summarize(mean_unm = mean(unm), median_unm= median(unm), n = n())
+
+head(unmg_country)
+
+unmg_year <- unmg %>%
+  group_by(year) %>%
+  summarize(mean_unm = mean(unm), median_unm= median(unm), n = n())
+
+head(unmg_year)
+```
+
+add a new column to unmg_year to convert the year to a numeric:
+
+```{r}
+unmg_year$year_num <- as.numeric(unmg_year$year)
+
+```
+check to see if there is a correlation between Year and Mean unemployment rate:
+
+```{r}
+cor.test(unmg_year$year_num, unmg_year$mean_unm)
+
+```
+
+A correlation of 0.46 indicates that there is a considerable correlation among the two variables. Lets draw a scatter plot to visualize the relation:
+
+
+
+```{r}
+
+ggplot(data = unmg_year, aes(x=year_num, y = mean_unm)) + geom_point()
+
+```
+
+Lets draw a Liner model to the graph:
+
+```{r}
+
+ggplot(data = unmg_year, aes(x=year_num, y = mean_unm)) + geom_point() +
+  geom_smooth(method = 'lm')
+  
+
+```
+
+The linear model indicates a growing trend in unemployment rate as the years progress. from the scatter plot, one of the points looks like an outlier, lets try to remove this and plot the lm again:
+
+```{r}
+
+ggplot(data = unmg_year, aes(x=year_num, y = mean_unm)) + geom_point() +
+  xlim(c(2,25)) + 
+  geom_smooth(method = 'lm')
+  
+```
+
+It would be a good idea to overlay this information with growth in population and see if there is a correlation between Population growth and unemployment rate. Analysis for some other day.
