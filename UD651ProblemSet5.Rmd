@@ -1,0 +1,159 @@
+---
+title: "UDA651ProblemSet5"
+author: "Mallesh"
+date: "December 28, 2015"
+output: pdf_document
+---
+
+Load the diamonds dataset and required libraries.
+
+```{r}
+require(dplyr)
+require(ggplot2)
+require(gridExtra)
+
+data("diamonds")
+
+```
+
+Create a histogram of diamond prices, Facet the histogram by diamond color and 
+use cut to color the histogram bars.
+
+```{r}
+qplot(data=diamonds, price, color=cut, bins=10) + facet_wrap(~color) +
+  scale_fill_brewer(type = 'qual')
+```
+
+Create a scatterplot of diamond price vs. table and color the points by the cut of the diamond.
+
+```{r}
+ggplot(data=diamonds, aes(x=table, y=price)) + geom_point(aes(color=cut))
+
+```
+
+What is the typical table range for cut IDEAL. 
+
+```{r}
+
+range(filter(diamonds, cut=="Ideal")$table)
+
+```
+
+Create a scatterplot of diamond price vs.volume (x * y * z) and color the points by the clarity of diamonds. Use scale on the y-axis to take the log10 of price. You should also omit the top 1% of diamond volumes from the plot.
+
+```{r}
+ggplot(data=filter(diamonds, x*y*z >0), aes(x=x * y * z, y=price)) + 
+  xlim(0, quantile(diamonds$x * diamonds$y * diamonds$z, 0.99)) +
+  geom_point(aes(color=clarity)) +
+  scale_y_log10()
+```
+
+create a new variable called 'prop_initiated' in the Pseudo-Facebook data set. The variable should contain the proportion of friendships that the user initiated.
+
+```{r}
+
+pf <- read.csv("pseudo_facebook.tsv", sep="\t")
+
+pf <- pf %>%
+  mutate(prop_initiated = ifelse(friend_count > 0 ,friendships_initiated/friend_count,NA))
+
+#pf$prop_initiated <- ifelse(is.finite(pf$prop_initiated),pf$prop_initiated,0)
+```
+
+Create a line graph of the median proportion of friendships initiated ('prop_initiated') vs. tenure and color the line segment by year_joined.bucket.
+
+```{r}
+
+pf <- pf %>% mutate(year_joined = floor(2014 - (tenure/365) ))
+
+pf$year_joined.bucket <- cut(pf$year_joined, 
+                             breaks=c(2004, 2009,2011, 2012, 2014))
+
+ggplot(data=pf, aes(x=tenure, y=prop_initiated)) +
+  geom_line(aes(color=year_joined.bucket), stat="summary", fun.y=median) 
+
+```
+Smooth the last plot you created of of prop_initiated vs tenure colored by
+year_joined.bucket. You can bin together ranges of tenure or add a smoother to the plot.
+
+```{r}
+ggplot(data=pf, aes(x=tenure, y=prop_initiated)) +
+  geom_line(aes(color=year_joined.bucket), stat="summary", fun.y=median) +
+  #geom_line(aes(color=year_joined.bucket), stat="summary", fun.y=mean)  
+  geom_smooth()
+```
+
+```{r}
+ggplot(data=pf, aes(x=tenure, y=prop_initiated)) +
+  #geom_line(aes(color=year_joined.bucket), stat="summary", fun.y=median) +
+  geom_line(aes(color=year_joined.bucket), stat="summary", fun.y=mean)  +
+  geom_smooth()
+```
+
+Create a scatter plot of the price/carat ratio of diamonds. The variable x should be assigned to cut. The points should be colored
+by diamond color, and the plot should be faceted by clarity.
+
+```{r}
+ggplot(data=diamonds, aes(x=cut, y=price/carat)) +
+  geom_point(aes(color=color)) + facet_wrap(~clarity)
+```
+
+Below is the final exercise where a dataset from Gapminder is downloaded.
+
+Save the Unemployment data set for 15+ year olds for several countries for last 25+ years. The data is avaiable in Excel which was converted into CSV for the ease of reading into R.
+
+```{r}
+require(tidyr)
+
+unm <- read.csv("unemployment_15.csv")
+
+head(unm)
+
+names(unm) <- c("country",1981:2005,"dummy")
+```
+
+reshape the data, convert the data from columns to rows. Filter the NAs after the conversion.
+
+```{r}
+unmg <- gather(unm, 'year',"unm",2:27)
+
+unmg <- filter(unmg, !is.na(unm))
+
+```
+
+create bins for each decade:
+
+```{r}
+unmg <- unmg %>%
+  mutate(year_num = as.integer(year) + 1980)
+
+
+unmg$year.bucket <- cut(unmg$year_num, 
+                             breaks=c(1980,1991,2000,2005), right=T)
+```
+
+plot unemplyment mean across the years:
+
+```{r}
+ggplot(unmg, aes(x=year, y=unm)) + geom_point(aes(color=year.bucket))
+
+```
+
+Scatter plot doesn't really show any patterns except that the minimum employment rate increased across the decades.
+
+Let us confirm our observation by pointing the median unemplyment rate.
+
+```{r}
+ggplot(unmg, aes(x=year_num, y=unm)) + geom_point(aes(color=year.bucket)) +
+  
+  geom_line(stat="summary", fun.y=median)
+```
+lets add facet wrap for different countries:
+
+```{r}
+ggplot(unmg, aes(x=year_num, y=unm)) + geom_point(aes(color=year.bucket)) +
+  
+  geom_line(stat="summary", fun.y=median) + facet_wrap(~country)
+```
+
+This graph indicates trend across countries. Advanced countries like Australia, Canada, United states show a downward trend, while some of the countries like China indicates an upward trend in unemplyment rate.
